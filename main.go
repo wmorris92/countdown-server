@@ -2,12 +2,22 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/wmorris92/countdown-server/solver"
 )
+
+func determineListenAddress() (string, error) {
+	port := os.Getenv("PORT")
+	if port == "" {
+		return "", fmt.Errorf("$PORT not set")
+	}
+	return ":" + port, nil
+}
 
 func solveCountdown(w http.ResponseWriter, r *http.Request) {
 	type countdownResult struct {
@@ -30,10 +40,16 @@ func solveCountdown(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	addr, err := determineListenAddress()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	r := mux.NewRouter()
 	// Routes consist of a path and a handler function.
 	r.HandleFunc("/countdown/{letters}", solveCountdown)
 
+	log.Printf("Listening on %s...\n", addr)
 	// Bind to a port and pass our router in
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(http.ListenAndServe(addr, r))
 }
